@@ -13,11 +13,14 @@
 #   - COVID-19 vaccinations administered time series, faceted by district county
 #   - New COVID-19 cases per 100,000 residents time series, single plot
 #   - GIF of new weekly cases by county, including DuPage and Cook
+#
+# Instructions for faceted GIF: https://towardsdatascience.com/how-to-combine-animated-plots-in-r-734c6c952315
 #-------------------------------------------------------------------------------
 
 # Load libraries
 library(tidyverse)
 library(gganimate)
+library(magick)
 library(zoo)
 library(lubridate)
 library(scales)
@@ -59,8 +62,9 @@ lasalle_vaccine <- read.csv("https://idph.illinois.gov/DPHPublicInformation/api/
 will_vaccine <- read.csv("https://idph.illinois.gov/DPHPublicInformation/api/COVIDExport/GetVaccineAdministration?format=csv&countyName=will", skip = 1)
 
 vaccines <- rbind(dekalb_vaccine, kane_vaccine, kendall_vaccine, lasalle_vaccine, will_vaccine) %>%
-    mutate(date = mdy(substr(Report_Date, 1, nchar(Report_Date)-12)))
-
+    mutate(Report_Date = as.character(Report_Date)) %>%
+    mutate(date = mdy(substr(Report_Date, 1, nchar(Report_Date)-12)),
+           PctVaccinatedPopulation = round(PctVaccinatedPopulation*100, 1))
 
 # Create figures
 
@@ -88,7 +92,7 @@ vaccines_plot <- ggplot(vaccines, aes(date, AdministeredCountChange)) +
     labs(y = "# of Administered Doses", x = "Date") +
     theme_classic() +
     theme(axis.title.x = element_blank()) + 
-    scale_x_date(breaks = as.Date(c("2021-01-01", "2021-02-01")), 
+    scale_x_date(breaks = as.Date(c("2021-01-01", "2021-02-01", "2021-03-01")), 
                  labels = date_format("%b")) + 
     facet_wrap(vars(CountyName), nrow = 2, scales='free')
 
@@ -170,9 +174,20 @@ finalmap <- il_base +
 
 # Animate GIF
 
-a <- animate(finalmap, renderer = av_renderer())
+a1 <- animate(finalmap, renderer = av_renderer())
+a2 <- animate(finalmap, nframes = 372, dur = 40)
 
 
 # Save GIF
 
-anim_save("covid_gif.mp4", a)
+anim_save("a.mp4", a)
+
+# Second GIF
+
+trend_final <- cases_singleplot +
+    transition_reveal(date)
+
+b1 <- animate(trend_final, renderer = av_renderer())
+b2 <- animate(trend_final, nframes = 372, dur = 40)
+
+anim_save("b.mp4", b)

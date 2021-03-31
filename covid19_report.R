@@ -40,18 +40,19 @@ covid <- read_csv(url("https://raw.githubusercontent.com/nytimes/covid-19-data/m
 
 covid2 <- covid %>%
     filter(state == "Illinois") %>%
-    left_join(countypop, by = c("county" = "ctyname")) %>%
+    left_join(countypop, by = c("county" = "CTYNAME")) %>%
     filter(date >= as.Date('2020-03-01') & date <= Sys.Date()) %>% 
     arrange(county, date) %>%
     group_by(county) %>%
     mutate(daily_cases = cases - lag(cases, 1),
            daily_cases_7d_avg = rollmean(daily_cases, k=7, na.pad=TRUE, align="right"),
-           daily_cases_100k = (daily_cases/popestimate2019)*100000,
+           daily_cases_100k = (daily_cases/POPESTIMATE2019)*100000,
            daily_cases_100k_7d_avg = rollmean(daily_cases_100k, k=7, na.pad=TRUE, align="right"),
            daily_deaths = deaths - lag(deaths, 1),
            daily_deaths_7d_avg = rollmean(daily_deaths, k=7, na.pad=TRUE, align="right"),
-           daily_deaths_100k = (daily_deaths/popestimate2019)*100000,
-           daily_deaths_100k_7d_avg = rollmean(daily_deaths_100k, k=7, na.pad=TRUE, align="right")) %>%
+           daily_deaths_100k = (daily_deaths/POPESTIMATE2019)*100000,
+           daily_deaths_100k_7d_avg = rollmean(daily_deaths_100k, k=7, na.pad=TRUE, align="right"), 
+           monthyear = paste(month(date, label = TRUE, abbr = FALSE), year(date))) %>%
     filter(county %in% c("DeKalb", "Kane", "Kendall", "LaSalle", "Will"))
 
 # County-level vaccine data from IDPH
@@ -169,7 +170,7 @@ finalmap <- il_base +
                         breaks = c(5, 50, 100, 200),  
                         name = "New Daily Cases per 100,000") + 
     transition_time(date) + 
-    labs(title = "Date: {frame_time}")
+    labs(title = "{paste(month(frame_time, label = TRUE, abbr = FALSE), year(frame_time))}")
 
 
 # Animate GIF
